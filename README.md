@@ -1,6 +1,6 @@
-# Academic Papers Data Pipeline
+# AI Research Assistant 
 
-A scalable data pipeline for ingesting, processing, and searching academic papers using **Flyte** orchestration, **PySpark** processing, and **Iceberg** storage.
+A scalable data pipeline for ingesting, processing, and searching academic papers using **Flyte** orchestration, **PySpark** processing, and **Iceberg** storage, to be accessible for an AI research assistant app using Qdrant for vector search.
 
 ## Architecture
 
@@ -139,10 +139,3 @@ flyte-cli get-execution --project your-project --domain development <execution-i
 # Get task logs
 flyte-cli get-task-logs --project your-project --domain development <execution-id> <task-id>
 ```
-
-## Next Steps
-
-1. **Vector Search**: Set up Qdrant and configure embeddings
-2. **Real-time API**: Build API service for querying results
-3. **Monitoring**: Add metrics and alerting for pipeline health
-4. **Scheduling**: Configure automated execution schedules
