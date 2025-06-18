@@ -58,35 +58,18 @@ See `config.py` for:
 ### Step 1: Build and Push Container Images
 
 ```bash
-# Build the raw data lake image
-docker build -f raw_data_lake/Dockerfile -t your-registry/academic-papers-raw-data-lake:latest .
-
-# Build the refined data lakehouse image
-docker build -f refined_data_lakehouse/Dockerfile -t your-registry/academic-papers-refined-data-lakehouse:latest .
-
-# Build the load vector search image
-docker build -f load_vector_search/Dockerfile -t your-registry/academic-papers-load-vector-search:latest .
+# Build all images
+docker build -f raw_data_lake/Dockerfile -t ghcr.io/cbohara/ai-research-assistant-raw-data-lake:latest .
+docker build -f refined_data_lakehouse/Dockerfile -t ghcr.io/cbohara/ai-research-assistant-refined-data-lakehouse:latest .
+docker build -f load_vector_search/Dockerfile -t ghcr.io/cbohara/ai-research-assistant-load-vector-search:latest .
 
 # Push to registry
-docker push your-registry/academic-papers-raw-data-lake:latest
-docker push your-registry/academic-papers-refined-data-lakehouse:latest
-docker push your-registry/academic-papers-load-vector-search:latest
+docker push ghcr.io/cbohara/ai-research-assistant-raw-data-lake:latest
+docker push ghcr.io/cbohara/ai-research-assistant-refined-data-lakehouse:latest
+docker push ghcr.io/cbohara/ai-research-assistant-load-vector-search:latest
 ```
 
-### Step 2: Update Flyte Workflow
-
-Update the image references in `pipeline.py`:
-
-```python
-# Replace with your actual registry
-image="your-registry/academic-papers-raw-data-lake:latest"
-image="your-registry/academic-papers-refined-data-lakehouse:latest"
-image="your-registry/academic-papers-load-vector-search:latest"
-```
-
-### Step 3: Deploy to Flyte
-
-#### Option 1: Using Flyte CLI
+### Step 2: Deploy to Flyte
 
 ```bash
 # Register the workflow
@@ -95,54 +78,12 @@ flyte-cli register-files --project your-project --domain development pipeline.py
 # Launch the workflow
 flyte-cli launch --project your-project --domain development \
   --workflow academic_papers_pipeline \
-  --inputs '{"s3_bucket": "academic-papers-data-lake", "sources": ["arxiv", "pubmed"], "days_back": 7}'
+  --inputs '{"s3_bucket": "ai-research-assistant-data-lake", "sources": ["arxiv", "pubmed"], "days_back": 7}'
 ```
 
-#### Option 2: Using Python SDK
+### Step 3: Environment Configuration
 
-```python
-from flytekit import remote
-from pipeline import academic_papers_pipeline
-
-# Connect to Flyte cluster
-remote.initialize("your-flyte-cluster-url")
-
-# Launch workflow
-result = academic_papers_pipeline.remote(
-    s3_bucket="academic-papers-data-lake",
-    sources=["arxiv", "pubmed"],
-    days_back=7
-)
-print(f"Workflow result: {result}")
-```
-
-### Step 4: Configure Scheduling (Optional)
-
-```python
-from flytekit import CronSchedule
-
-@workflow(
-    schedule=CronSchedule(
-        schedule="0 2 * * *",  # Daily at 2 AM
-        kickoff_time_input_arg="kickoff_time"
-    )
-)
-def scheduled_academic_papers_pipeline(
-    s3_bucket: str = "academic-papers-data-lake",
-    sources: List[str] = ["arxiv", "pubmed"],
-    days_back: int = 7,
-    kickoff_time: datetime = None
-) -> Dict[str, Any]:
-    return academic_papers_pipeline(
-        s3_bucket=s3_bucket,
-        sources=sources,
-        days_back=days_back
-    )
-```
-
-### Step 5: Environment Configuration
-
-#### Environment Variables
+Set these environment variables:
 
 ```bash
 # AWS Configuration
@@ -151,80 +92,45 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_DEFAULT_REGION=us-east-1
 
 # S3 Configuration
-S3_BUCKET=academic-papers-data-lake
+S3_BUCKET=ai-research-assistant-data-lake
 
-# Spark Configuration (if using external Spark cluster)
-SPARK_MASTER_URL=spark://your-spark-master:7077
+# Docker Registry
+DOCKER_REGISTRY=ghcr.io/cbohara
 ```
 
-#### Flyte Configuration
-
-Create a `flyte.yaml` configuration:
-
-```yaml
-# flyte.yaml
-project: academic-papers
-domain: production
-version: v1
-
-# Resource limits
-defaults:
-  cpu: "2"
-  memory: "4Gi"
-  storage: "10Gi"
-
-# Task-specific configurations
-tasks:
-  raw_data_extraction_task:
-    cpu: "2"
-    memory: "4Gi"
-    timeout: "1h"
-  
-  refined_data_processing_task:
-    cpu: "4"
-    memory: "8Gi"
-    timeout: "2h"
-    
-  vector_loading_task:
-    cpu: "2"
-    memory: "4Gi"
-    timeout: "1h"
-```
-
-### Step 6: Testing
+### Step 4: Testing
 
 ```bash
-# Test with small dataset
+# Test individual components
 flyte-cli launch --project your-project --domain development \
-  --workflow academic_papers_pipeline \
+  --workflow raw_data_extraction_only_workflow \
   --inputs '{"s3_bucket": "test-bucket", "sources": ["arxiv"], "days_back": 1}'
 ```
 
-### Step 7: Monitoring
+## Local Development
 
-Access the Flyte console to monitor:
-- Workflow execution status
-- Task logs and metrics
-- Resource utilization
-- Error handling
+```bash
+# Install development dependencies
+pip install -r requirements.txt
 
-### Troubleshooting
+# Run individual jobs locally
+python raw_data_lake/job.py
+python refined_data_lakehouse/job.py
+python load_vector_search/job.py
 
-#### Common Issues
+# Test the pipeline
+python pipeline.py
+```
 
-1. **Container Image Not Found**
-   - Verify image is pushed to registry
-   - Check image name and tag in workflow
+## Troubleshooting
 
-2. **S3 Access Denied**
-   - Verify AWS credentials
-   - Check S3 bucket permissions
+### Common Issues
 
-3. **Spark Job Fails**
-   - Check Spark cluster connectivity
-   - Verify Iceberg configuration
+1. **Container Image Not Found** - Verify image is pushed to registry
+2. **S3 Access Denied** - Check AWS credentials and bucket permissions
+3. **Spark Job Fails** - Verify Spark cluster connectivity and Iceberg configuration
 
-#### Debug Commands
+### Debug Commands
 
 ```bash
 # Check workflow status
@@ -232,21 +138,11 @@ flyte-cli get-execution --project your-project --domain development <execution-i
 
 # Get task logs
 flyte-cli get-task-logs --project your-project --domain development <execution-id> <task-id>
-
-# List recent executions
-flyte-cli list-executions --project your-project --domain development
 ```
-
-### Production Considerations
-
-- **Security**: Use IAM roles, enable VPC, use encrypted S3 buckets
-- **Scalability**: Configure auto-scaling, use spot instances, implement retry logic
-- **Monitoring**: Set up alerts, monitor costs, track API rate limits
-- **Backup**: Implement data backup strategies and disaster recovery procedures
 
 ## Next Steps
 
-1. **Embedding Pipeline**: Add task for generating embeddings
-2. **Vector Search**: Integrate with Qdrant or similar
-3. **Real-time API**: Build API service for querying results
-4. **Advanced Monitoring**: Implement comprehensive observability
+1. **Vector Search**: Set up Qdrant and configure embeddings
+2. **Real-time API**: Build API service for querying results
+3. **Monitoring**: Add metrics and alerting for pipeline health
+4. **Scheduling**: Configure automated execution schedules
