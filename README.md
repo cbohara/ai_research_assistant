@@ -5,13 +5,14 @@ A scalable data pipeline for ingesting, processing, and searching academic paper
 ## Architecture
 
 ```
-Academic APIs → Extract Service → S3 → Transform Service → Iceberg Tables → Vector Search
+Academic APIs → Raw Data Lake → S3 → Refined Data Lakehouse → Iceberg Tables → Load Vector Search → Qdrant
 ```
 
 ### Components
 
-- **`extract/`** - PDF ingestion service that fetches papers from APIs
-- **`transform/`** - PySpark job that processes raw data into Iceberg tables  
+- **`raw_data_lake/`** - PDF ingestion service that fetches papers from APIs
+- **`refined_data_lakehouse/`** - PySpark job that processes raw data into Iceberg tables  
+- **`load_vector_search/`** - Service that generates embeddings and loads into Qdrant
 - **`pipeline.py`** - Flyte workflow that orchestrates the entire pipeline
 - **`config.py`** - Configuration for data sources and processing parameters
 
@@ -23,9 +24,9 @@ Academic APIs → Extract Service → S3 → Transform Service → Iceberg Table
 
 ## Data Flow
 
-1. **Extract**: PDF ingestion service downloads papers from academic APIs and stores metadata in S3
-2. **Transform**: PySpark job processes raw data, validates quality, and writes to Iceberg tables
-3. **Search**: Vector embeddings are generated and indexed for real-time querying
+1. **Raw Data Lake**: PDF ingestion service downloads papers from academic APIs and stores metadata in S3
+2. **Refined Data Lakehouse**: PySpark job processes raw data, validates quality, and writes to Iceberg tables
+3. **Load Vector Search**: Service reads from Iceberg tables, generates embeddings, and loads into Qdrant for real-time search
 
 ## Features
 
@@ -57,15 +58,19 @@ See `config.py` for:
 ### Step 1: Build and Push Container Images
 
 ```bash
-# Build the PDF ingestion image
-docker build -f extract/Dockerfile -t your-registry/academic-papers-pdf-ingestion:latest .
+# Build the raw data lake image
+docker build -f raw_data_lake/Dockerfile -t your-registry/academic-papers-raw-data-lake:latest .
 
-# Build the PySpark image
-docker build -f transform/Dockerfile -t your-registry/academic-papers-pyspark:latest .
+# Build the refined data lakehouse image
+docker build -f refined_data_lakehouse/Dockerfile -t your-registry/academic-papers-refined-data-lakehouse:latest .
+
+# Build the load vector search image
+docker build -f load_vector_search/Dockerfile -t your-registry/academic-papers-load-vector-search:latest .
 
 # Push to registry
-docker push your-registry/academic-papers-pdf-ingestion:latest
-docker push your-registry/academic-papers-pyspark:latest
+docker push your-registry/academic-papers-raw-data-lake:latest
+docker push your-registry/academic-papers-refined-data-lakehouse:latest
+docker push your-registry/academic-papers-load-vector-search:latest
 ```
 
 ### Step 2: Update Flyte Workflow
@@ -74,8 +79,9 @@ Update the image references in `pipeline.py`:
 
 ```python
 # Replace with your actual registry
-image="your-registry/academic-papers-pdf-ingestion:latest"
-image="your-registry/academic-papers-pyspark:latest"
+image="your-registry/academic-papers-raw-data-lake:latest"
+image="your-registry/academic-papers-refined-data-lakehouse:latest"
+image="your-registry/academic-papers-load-vector-search:latest"
 ```
 
 ### Step 3: Deploy to Flyte
@@ -89,7 +95,7 @@ flyte-cli register-files --project your-project --domain development pipeline.py
 # Launch the workflow
 flyte-cli launch --project your-project --domain development \
   --workflow academic_papers_pipeline \
-  --inputs '{"s3_bucket": "your-academic-data-bucket", "sources": ["arxiv", "pubmed"], "days_back": 7}'
+  --inputs '{"s3_bucket": "academic-papers-data-lake", "sources": ["arxiv", "pubmed"], "days_back": 7}'
 ```
 
 #### Option 2: Using Python SDK
@@ -103,7 +109,7 @@ remote.initialize("your-flyte-cluster-url")
 
 # Launch workflow
 result = academic_papers_pipeline.remote(
-    s3_bucket="your-academic-data-bucket",
+    s3_bucket="academic-papers-data-lake",
     sources=["arxiv", "pubmed"],
     days_back=7
 )
@@ -122,7 +128,7 @@ from flytekit import CronSchedule
     )
 )
 def scheduled_academic_papers_pipeline(
-    s3_bucket: str = "your-academic-data-bucket",
+    s3_bucket: str = "academic-papers-data-lake",
     sources: List[str] = ["arxiv", "pubmed"],
     days_back: int = 7,
     kickoff_time: datetime = None
@@ -145,7 +151,7 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_DEFAULT_REGION=us-east-1
 
 # S3 Configuration
-S3_BUCKET=your-academic-data-bucket
+S3_BUCKET=academic-papers-data-lake
 
 # Spark Configuration (if using external Spark cluster)
 SPARK_MASTER_URL=spark://your-spark-master:7077
@@ -169,15 +175,20 @@ defaults:
 
 # Task-specific configurations
 tasks:
-  pdf_ingestion_task:
+  raw_data_extraction_task:
     cpu: "2"
     memory: "4Gi"
     timeout: "1h"
   
-  pyspark_processing_task:
+  refined_data_processing_task:
     cpu: "4"
     memory: "8Gi"
     timeout: "2h"
+    
+  vector_loading_task:
+    cpu: "2"
+    memory: "4Gi"
+    timeout: "1h"
 ```
 
 ### Step 6: Testing

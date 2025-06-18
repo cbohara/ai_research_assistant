@@ -1,9 +1,18 @@
 # Pipeline Configuration
 import os
 
+# Docker Registry Configuration
+DOCKER_REGISTRY = os.getenv("DOCKER_REGISTRY", "ghcr.io/your-username")
+DOCKER_IMAGE_PREFIX = os.getenv("DOCKER_IMAGE_PREFIX", "academic-papers")
+
 # S3 Configuration
-S3_BUCKET = os.getenv("S3_BUCKET", "your-academic-data-bucket")
+S3_BUCKET = os.getenv("S3_BUCKET", "academic-papers-data-lake")
 S3_REGION = os.getenv("S3_REGION", "us-east-1")
+
+# Qdrant Vector Database Configuration
+QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
+QDRANT_PORT = int(os.getenv("QDRANT_PORT", "6333"))
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "academic_papers")
 
 # Data Sources Configuration
 # Note: In production, these would be populated by separate API ingestion services
@@ -100,4 +109,11 @@ FIELD_MAPPINGS = {
         "keywords": "keywords"
     }
     # Add more source-specific mappings as needed
+}
+
+# Docker Image Names (constructed from registry and prefix)
+DOCKER_IMAGES = {
+    "raw_data_lake": f"{DOCKER_REGISTRY}/{DOCKER_IMAGE_PREFIX}-raw-data-lake:latest",
+    "refined_data_lakehouse": f"{DOCKER_REGISTRY}/{DOCKER_IMAGE_PREFIX}-refined-data-lakehouse:latest", 
+    "load_vector_search": f"{DOCKER_REGISTRY}/{DOCKER_IMAGE_PREFIX}-load-vector-search:latest"
 } 
