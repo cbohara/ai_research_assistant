@@ -89,7 +89,7 @@ def refined_data_processing_task(
 
 @task(
     task_config=ContainerTask(
-        image=DOCKER_IMAGES["load_vector_search"],
+        image=DOCKER_IMAGES["load_vector_database"],
         requests=Resources(cpu="2", mem="4Gi"),
         limits=Resources(cpu="4", mem="8Gi")
     ),

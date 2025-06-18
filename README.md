@@ -12,7 +12,7 @@ Academic APIs → Raw Data Lake → S3 → Refined Data Lakehouse → Iceberg Ta
 
 - **`raw_data_lake/`** - PDF ingestion service that fetches papers from APIs
 - **`refined_data_lakehouse/`** - PySpark job that processes raw data into Iceberg tables  
-- **`load_vector_search/`** - Service that generates embeddings and loads into Qdrant
+- **`load_vector_database/`** - Service that generates embeddings and loads into Qdrant
 - **`pipeline.py`** - Flyte workflow that orchestrates the entire pipeline
 - **`config.py`** - Configuration for data sources and processing parameters
 
@@ -61,7 +61,7 @@ See `config.py` for:
 # Build all images
 docker build -f raw_data_lake/Dockerfile -t ghcr.io/cbohara/ai-research-assistant-raw-data-lake:latest .
 docker build -f refined_data_lakehouse/Dockerfile -t ghcr.io/cbohara/ai-research-assistant-refined-data-lakehouse:latest .
-docker build -f load_vector_search/Dockerfile -t ghcr.io/cbohara/ai-research-assistant-load-vector-search:latest .
+docker build -f load_vector_database/Dockerfile -t ghcr.io/cbohara/ai-research-assistant-load-vector-search:latest .
 
 # Push to registry
 docker push ghcr.io/cbohara/ai-research-assistant-raw-data-lake:latest
@@ -116,7 +116,7 @@ pip install -r requirements.txt
 # Run individual jobs locally
 python raw_data_lake/job.py
 python refined_data_lakehouse/job.py
-python load_vector_search/job.py
+python load_vector_database/job.py
 
 # Test the pipeline
 python pipeline.py
