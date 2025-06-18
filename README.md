@@ -1,6 +1,6 @@
 # AI Research Assistant 
 
-A scalable data pipeline for ingesting, processing, and searching academic papers using **Flyte** orchestration, **PySpark** processing, and **Iceberg** storage, to be accessible for an AI research assistant app using Qdrant for vector search.
+A scalable data pipeline for ingesting, processing, and searching academic papers using **Flyte** orchestration, **Python** and **PySpark** processing, and **Iceberg** storage. This data is loaded into a **Qdrant** vector database to power an AI research assistant service.
 
 ## Architecture
 
