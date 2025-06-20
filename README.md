@@ -4,8 +4,9 @@ A scalable data pipeline for ingesting, processing, and searching academic paper
 
 ## Architecture
 
+Data flow
 ```
-Academic APIs → Raw Data Lake → S3 → Refined Data Lakehouse → Iceberg Tables → Load Vector Search → Qdrant
+Academic APIs → Raw Data Lake → Refined Data Lakehouse → Vector database
 ```
 
 ### Components
