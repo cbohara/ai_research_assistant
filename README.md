@@ -4,9 +4,15 @@ A scalable data pipeline for ingesting, processing, and searching academic paper
 
 ## Architecture
 
+## Data Flow
+
 ```
 Academic APIs → Raw Data Lake → Refined Data Lakehouse → Vector Database
 ```
+
+1. **Raw Data Lake**: PDF ingestion service downloads papers from academic APIs and stores metadata in S3
+2. **Refined Data Lakehouse**: PySpark job processes raw data, validates quality, and writes to Iceberg tables
+3. **Load Vector Search**: Python job reads from Iceberg tables, generates embeddings, and loads into Qdrant for real-time search
 
 ### Components
 
@@ -15,18 +21,6 @@ Academic APIs → Raw Data Lake → Refined Data Lakehouse → Vector Database
 - **`load_vector_database/`** - Service that generates embeddings and loads into Qdrant
 - **`pipeline.py`** - Flyte workflow that orchestrates the entire pipeline
 - **`config.py`** - Configuration for data sources and processing parameters
-
-## Quick Start
-
-1. **Install dependencies**: `pip install -r requirements.txt`
-2. **Configure environment**: Set S3 bucket, region, and other settings in `config.py`
-3. **Deploy**: Follow the deployment instructions below
-
-## Data Flow
-
-1. **Raw Data Lake**: PDF ingestion service downloads papers from academic APIs and stores metadata in S3
-2. **Refined Data Lakehouse**: PySpark job processes raw data, validates quality, and writes to Iceberg tables
-3. **Load Vector Search**: Python job reads from Iceberg tables, generates embeddings, and loads into Qdrant for real-time search
 
 ## Features
 
