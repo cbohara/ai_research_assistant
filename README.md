@@ -6,7 +6,7 @@ A scalable data pipeline for ingesting, processing, and searching academic paper
 
 Data flow
 ```
-Academic APIs → Raw Data Lake → Refined Data Lakehouse → Vector database
+Academic APIs → Raw Data Lake → Refined Data Lakehouse → Vector Database
 ```
 
 ### Components
